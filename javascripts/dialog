@@ -1,0 +1,150 @@
+$(function() {
+	window.Modal = function() {
+
+		var ops = {
+				title:'标题',
+				msg:'内容',
+				url : '',//请求地址
+				showCloseButton:true,//显示关闭按钮
+				otherButtons:[],//其他按钮文本，样式默认,["确定","取消"]
+				otherButtonStyles:[],//其他按钮的样式，['btn-primary','btn-primary'],bootstrap按钮样式
+				bootstrapModalOption:{},//默认的bootstrap模态对话框参数
+				dialogShow:function(){},//对话框即将显示事件
+				dialogShown:function(){},//对话框已经显示事件
+				dialogHide:function(){},//对话框即将关闭
+				dialogHidden:function(){},//对话框已经关闭事件
+				clickButton:function(sender,modal,index){}
+			}
+		
+		var buttonHtml = '<button class="btn" data-dismiss="modal" aria-hidden="true">关闭</button>';
+		
+		var _tplHtml = '<div class="modal created-modal" id="[Id]">'
+				+ '<div class="modal-dialog modal-sm">'
+				+ '<div class="modal-content">'
+				+ '<div class="modal-header">'
+				+ '<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>'
+				+ '<h5 class="modal-title"><i class="fa fa-exclamation-circle"></i> [Title]</h5>'
+				+ '</div>'
+				+ '<div class="modal-body small">'
+				+ '<p>[Message]</p>'
+				+ '</div>'
+				+ '<div class="modal-footer" >'
+				+ '[ButtonHtml]'
+				+ '</div>' + '</div>' + '</div>' + '</div>';
+
+		var _tplLoadHtml = '<div class="modal created-modal" id="[Id]">'
+				+ '<div class="container" style="width: 100%;">'
+				+ '<div class="modal-dialog" style="width: 100%;">'
+				+ '<div class="modal-content" style="width: 100%;">'
+				+ '<div class="modal-header" style="width: 100%;">'
+				+ '<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>'
+				+ '<h5 class="modal-title">[Title]</h5>'
+				+ '</div>'
+				+ '<div class="modal-body small">'
+				+ '<iframe src="[Url]" frameborder="0" width="100%" height="[Height]" style="padding:0px; margin:0px;"></iframe>'
+				+ '</div>' + '</div>' + '</div>' + '</div>' + '</div>';
+
+		var reg = new RegExp("\\[([^\\[\\]]*?)\\]", 'igm');
+
+		var _alert = function(options) {
+			_dialog(options);
+		};
+
+		var _load = function(options) {
+			$.extend(ops, options);
+			var modalId = _getId();
+			var html = _tplLoadHtml.replace(reg, function(node, key) {
+				return {
+					Id : modalId,
+					Title : ops.title,
+					Url : ops.url,
+					Height : ops.height
+				}[key];
+			});
+
+			$('body').append(html);
+			var modal = $('#' + modalId).modal({
+				width : ops.width
+			});
+
+		}
+
+		var _getId = function() {
+			var date = new Date();
+			return 'mdl' + date.valueOf();
+		}
+
+		var _dialog = function(options) {
+			
+			options=$.extend(ops, options);
+
+			var modalId = _getId();
+			if (!options.showCloseButton && options.otherButtons.length > 0) {
+				buttonHtml = '';
+			}
+			//生成按钮
+			var btnClass = 'cls-' + modalId;
+			for (var i = 0; i < options.otherButtons.length; i++) {
+					buttonHtml += '<button buttonIndex="' + i + '" class="' + btnClass + ' btn ' + options.otherButtonStyles[i] + '"data-dismiss="modal">' + options.otherButtons[i] + '</button>';
+			}
+			var html = _tplHtml.replace(reg, function(node, key) {
+				return {
+					Id : modalId,
+					Title : ops.title,
+					Message : ops.msg,
+					ButtonHtml:buttonHtml
+				}[key];
+			});
+
+			$('body').append(html);
+			$('#' + modalId).modal({
+				width : ops.width,
+				height : ops.height,
+				backdrop : 'static'
+			});
+
+			$('#' + modalId).on('hide.bs.modal', function(e) {
+				$(this).parent('.modal-scrollable').next().remove();
+				$(this).parent('.modal-scrollable').remove();
+			});
+			
+			var modalObj = $('#' + modalId);
+			//绑定按钮事件,不包括关闭按钮
+			$('.' + btnClass).click(function() {
+				var index = $(this).attr('buttonIndex');
+				options.clickButton($(this), modalObj, index);
+			});
+			//绑定本身的事件
+			$('#' + modalId).on('show.bs.modal', function() {
+				options.dialogShow();
+			});
+			$('#' + modalId).on('shown.bs.modal', function() {
+				options.dialogShown();
+			});
+			$('#' + modalId).on('hide.bs.modal', function() {
+				options.dialogHide();
+			});
+			$('#' + modalId).on('hidden.bs.modal', function() {
+				options.dialogHidden();
+				$('#' + modalId).remove();
+			});
+			modalObj.modal(options.bootstrapModalOption);
+			
+			return modalId;
+		}
+
+		return {
+			alert : _alert,
+			dialog : _dialog,
+			load : _load,
+			/*loading : function() {
+				$('body').modalmanager('loading');
+			},
+			removeLoading : function() {
+				$('body').modalmanager('removeLoading');
+			}*/
+		}
+
+	}();
+
+});
