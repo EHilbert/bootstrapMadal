@@ -1,0 +1,96 @@
+/**
+ * date：2016-06-16 author： Hilbert
+ */
+
+(function($) {
+	$.fn.modalDialog = function(options) {
+		var defaults = {
+			title: '标题',
+			content: '<p>内容</p>',
+			url : '',//iFrame请求地址
+			width:580,//iFrame宽度
+			height:297,//iFrame高度
+			showCloseButton:true,//显示关闭按钮
+			otherButtons:[],//其他按钮文本，样式默认,["确定","取消"]
+			otherButtonStyles:[],//其他按钮的样式，['btn-primary','btn-primary'],bootstrap按钮样式
+			keyboardModel:{keyboard: true},//默认的bootstrap模态对话框参数
+			dialogShow:function(){},//对话框即将显示事件
+			dialogShown:function(){},//对话框已经显示事件
+			dialogHide:function(){},//对话框即将关闭
+			dialogHidden:function(){},//对话框已经关闭事件
+			clickButton:function(sender,modal,index){}//绑定事件
+		};
+		options = $.extend(defaults, options);
+		var modalID = '';
+
+		//生成一个惟一的ID
+		function random(a, b) {
+			return Math.random() > 0.5 ? -1 : 1;
+		}
+
+		function getModalID() {
+			return "beamDialog-" + ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Q', 'q', 'W', 'w', 'E', 'e', 'R', 'r', 'T', 't', 'Y', 'y', 'U', 'u', 'I', 'i', 'O', 'o', 'P', 'p', 'A', 'a', 'S', 's', 'D', 'd', 'F', 'f', 'G', 'g', 'H', 'h', 'J', 'j', 'K', 'k', 'L', 'l', 'Z', 'z', 'X', 'x', 'C', 'c', 'V', 'v', 'B', 'b', 'N', 'n', 'M', 'm'].sort(random).join('').substring(5, 20);
+		}
+
+		$.fn.extend({
+			closeDialog: function(modal) {
+				var modalObj = modal;
+				modalObj.modal('hide');
+			}
+		});
+
+		return this.each(function() {
+			var obj = $(this);
+			modalID = getModalID();
+			var tmpHtml = '<div class="modal fade" id="{ID}" role="dialog" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button><h6 class="modal-title">{title}</h6></div><div class="modal-body small">{body}</div><div class="modal-footer">{button}</div></div></div></div>';
+			var buttonHtml = '<button class="btn" data-dismiss="modal" aria-hidden="true">关闭</button>';
+			var iFrame = '<iframe src="{url}" frameborder="0" width="{width}" height="{height}" ></iframe>';
+			if (!options.showCloseButton && options.otherButtons.length > 0) {
+				buttonHtml = '';
+			}
+			//生成按钮
+			var btnClass = 'cls-' + modalID;
+			for (var i = 0; i < options.otherButtons.length; i++) {
+				buttonHtml += '<button buttonIndex="' + i + '" class="' + btnClass + ' btn ' + options.otherButtonStyles[i] + '">' + options.otherButtons[i] + '</button>';
+			}
+			//替换模板标记
+			if(!!options.url){
+				iFrame = iFrame.replace(/{url}/g, options.url).replace(/{width}/g, options.width).replace(/{height}/g, options.height);
+				tmpHtml = tmpHtml.replace(/{ID}/g, modalID).replace(/{title}/g, options.title).replace(/{body}/g, iFrame).replace(/{button}/g, buttonHtml);
+			}else{
+				tmpHtml = tmpHtml.replace(/{ID}/g, modalID).replace(/{title}/g, options.title).replace(/{body}/g, options.content).replace(/{button}/g, buttonHtml);
+			}
+			obj.append(tmpHtml);
+
+			var modalObj = $('#' + modalID);
+			//绑定按钮事件,不包括关闭按钮
+			$('.' + btnClass).click(function() {
+				var index = $(this).attr('buttonIndex');
+				options.clickButton($(this), modalObj, index);
+			});
+			//绑定本身的事件
+			modalObj.on('show.bs.modal', function() {
+				options.dialogShow();
+			});
+			modalObj.on('shown.bs.modal', function() {
+				options.dialogShown();
+			});
+			modalObj.on('hide.bs.modal', function() {
+				options.dialogHide();
+			});
+			modalObj.on('hidden.bs.modal', function() {
+				options.dialogHidden();
+				modalObj.remove();
+			});
+			modalObj.modal(options.keyboardModel);
+		});
+
+	};
+
+	$.extend({
+		modalDialog: function(options) {
+			$("body").modalDialog(options);
+		}
+	});
+
+})(jQuery);
