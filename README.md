@@ -4,3 +4,7 @@
 
 ===js文件放在javaScript的文件夹下
 
+
+===jquery validate 扩张
+===读取json
+
